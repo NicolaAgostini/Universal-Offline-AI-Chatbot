@@ -1,0 +1,6 @@
+#predisposizione modello
+docker build -t ai-chatbot .
+
+#run docker
+docker run -p 8501:8501 --env-file .env -v ${PWD}/data:/app/data ai-chatbot
+

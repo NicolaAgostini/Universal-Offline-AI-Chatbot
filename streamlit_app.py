@@ -1,5 +1,7 @@
 # streamlit_app.py
 
+
+
 import streamlit as st
 from src.config import DATA_PATH, DB_FAISS_PATH
 from src.utils import stylish_heading

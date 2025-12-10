@@ -13,5 +13,7 @@ Question: {question}
 Start the answer directly without unnecessary text.
 """
 
+
+
 def set_custom_prompt(template: str = CUSTOM_PROMPT_TEMPLATE) -> PromptTemplate:
     return PromptTemplate(template=template, input_variables=["context", "question"])

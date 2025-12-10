@@ -1,6 +1,7 @@
 # === src/qa_chain.py ===
 from langchain.chains import RetrievalQA
 
+
 def setup_qa_chain(llm, db, prompt):
     return RetrievalQA.from_chain_type(
         llm=llm,

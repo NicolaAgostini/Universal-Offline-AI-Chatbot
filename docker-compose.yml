@@ -1,0 +1,17 @@
+services:
+  uoai:
+    image: universal-offline-ai-chatbot:local
+    container_name: uoai_chatbot
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./vectorstore:/app/vectorstore
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
