@@ -31,14 +31,14 @@ def load_llm():
 
 # === Custom Prompt ===
 CUSTOM_PROMPT_TEMPLATE = """
-Use the pieces of information provided in the context to answer the user's question.
-If you don't know the answer, say you don't know — do not make it up.
-Only refer to the context provided.
+Utilizza le informazioni fornite nel contesto per rispondere alla domanda dell'utente.
+Se non conosci la risposta, rispondi che non la conosci, non inventarla.
+Fai riferimento solo al contesto fornito.
 
-Context: {context}
-Question: {question}
+Contesto: {context}
+Domanda: {question}
 
-Start the answer directly without unnecessary text.
+Inizia la risposta direttamente senza testo superfluo.
 """
 
 def set_custom_prompt(template):

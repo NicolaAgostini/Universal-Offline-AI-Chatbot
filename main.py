@@ -16,6 +16,8 @@ def main():
     print("\n📄 Loading documents and building knowledge base...")
 
     documents = load_pdf_files(DATA_PATH)
+    print("\n📄 Print DOCUMENTS...")
+    print(documents)
     text_chunks = create_chunks(documents)
     embedding_model = get_embedding_model()
 
