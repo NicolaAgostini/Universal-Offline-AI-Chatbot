@@ -17,3 +17,5 @@ Question: {question}
 
 Start the answer directly without unnecessary text.
 """
+
+MEMORY_DB_PATH = "memory_db"

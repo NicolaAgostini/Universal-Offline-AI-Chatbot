@@ -1,6 +1,8 @@
-#predisposizione modello
-docker build -t ai-chatbot .
+#predisposizione container
+docker build -t universal-offline-ai-chatbot:local .
 
 #run docker
-docker run -p 8501:8501 --env-file .env -v ${PWD}/data:/app/data ai-chatbot
+docker-compose up -d
 
+# after modify .py, restart
+docker-compose restart uoai

@@ -9,6 +9,9 @@ services:
     volumes:
       - ./data:/app/data
       - ./vectorstore:/app/vectorstore
+      - ./src:/app/src
+      - ./streamlit_app.py:/app/streamlit_app.py
+      - ./main.py:/app/main.py
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/ || exit 1"]

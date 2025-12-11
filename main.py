@@ -1,5 +1,5 @@
 # === main.py ===
-from src.config import HF_TOKEN, DATA_PATH, DB_FAISS_PATH, CUSTOM_PROMPT_TEMPLATE
+from src.config import HF_TOKEN, DATA_PATH, DB_FAISS_PATH, CUSTOM_PROMPT_TEMPLATE, MEMORY_DB_PATH
 from src.utils import stylish_heading
 from src.model_loader import load_llm
 from src.prompts import set_custom_prompt
@@ -21,15 +21,23 @@ def main():
     text_chunks = create_chunks(documents)
     embedding_model = get_embedding_model()
 
+    # ---- MAIN DB (documents) ----
     if not os.path.exists(DB_FAISS_PATH):
-        print("🔧 Creating FAISS database...")
+        print("🔧 Creating Main FAISS database...")
         build_vector_db(text_chunks, embedding_model, DB_FAISS_PATH)
 
+    db_main = load_vector_db(DB_FAISS_PATH, embedding_model)
     print("✅ Vector DB ready. Launching QA Chat...\n")
 
-    db = load_vector_db(DB_FAISS_PATH, embedding_model)
+    # ---- MEMORY DB ----
+    if not os.path.exists(MEMORY_DB_PATH):
+        print("🧠 Creating Memory FAISS DB...")
+        build_vector_db([], embedding_model, MEMORY_DB_PATH)
+
+    db_memory = load_vector_db(MEMORY_DB_PATH, embedding_model)
+
     llm = load_llm()
-    qa_chain = setup_qa_chain(llm, db, set_custom_prompt(CUSTOM_PROMPT_TEMPLATE))
+    qa_chain = setup_qa_chain(llm, db_main, db_memory, set_custom_prompt())
 
     print("\n🟢 You can start chatting now. Type 'Exit the Chatbot' to end the session.\n")
 

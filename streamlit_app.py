@@ -12,6 +12,7 @@ from src.vectorstore import build_vector_db, load_vector_db
 from src.model_loader import load_llm
 from src.prompts import CUSTOM_PROMPT_TEMPLATE, set_custom_prompt
 from src.qa_chain import setup_qa_chain
+from src.memory_manager import load_memory_db, save_memory
 import os
 
 # Page config
@@ -34,12 +35,13 @@ def load_pipeline():
     if not os.path.exists(DB_FAISS_PATH):
         build_vector_db(chunks, embedding_model, DB_FAISS_PATH)
 
-    db = load_vector_db(DB_FAISS_PATH, embedding_model)
+    db_main = load_vector_db(DB_FAISS_PATH, embedding_model)
+    db_memory = load_memory_db(embedding_model)
     llm = load_llm()
-    qa_chain = setup_qa_chain(llm, db, set_custom_prompt(CUSTOM_PROMPT_TEMPLATE))
-    return qa_chain
+    qa_chain = setup_qa_chain(llm, db_main, db_memory, set_custom_prompt())
+    return qa_chain, db_memory, embedding_model
 
-qa_chain = load_pipeline()
+qa_chain, db_memory, embedding_model = load_pipeline()
 
 # Start chat session state
 if "chat_history" not in st.session_state:
@@ -51,18 +53,25 @@ st.chat_message("assistant").markdown("👋 Hello! I'm your AI assistant. Ask me
 user_input = st.chat_input("Type your question here...")
 
 if user_input:
-    # Store user message
-    st.session_state.chat_history.append(("user", user_input))
-    st.chat_message("user").markdown(user_input)
 
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking... 🧠"):
-            try:
-                response = qa_chain.invoke({"query": user_input})
-                st.markdown(f"🤖 {response['result']}")
-                st.session_state.chat_history.append(("bot", response['result']))
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
+    # --- Learning mode ---
+    if user_input.lower().startswith("learn:"):
+        new_knowledge = user_input.replace("learn:", "").strip()
+        save_memory(new_knowledge, db_memory)
+        st.chat_message("assistant").markdown(f"🧠 I learned: **{new_knowledge}**")
+    else:
+        # Normal question
+        st.chat_message("user").markdown(user_input)
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking... 🧠"):
+                try:
+                    answer = qa_chain.invoke({"query": user_input})
+                    st.markdown(f"🤖 {answer['result']}")
+                    st.session_state.chat_history.append(("bot", answer['result']))
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+
+
 
 # Optionally: show previous messages
 if st.session_state.chat_history:
