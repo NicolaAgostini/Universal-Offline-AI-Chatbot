@@ -1,5 +1,5 @@
 # === main.py ===
-from src.config import HF_TOKEN, DATA_PATH, DB_FAISS_PATH, CUSTOM_PROMPT_TEMPLATE, MEMORY_DB_PATH
+from src.config import HF_TOKEN, DATA_PATH, DB_FAISS_PATH, MEMORY_DB_PATH
 from src.utils import stylish_heading
 from src.model_loader import load_llm
 from src.prompts import set_custom_prompt

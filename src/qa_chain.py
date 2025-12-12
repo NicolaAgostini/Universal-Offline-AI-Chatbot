@@ -10,7 +10,7 @@ def setup_qa_chain(llm, db_main, db_memory, prompt):
     # Combine main + memory
     retriever = EnsembleRetriever(
         retrievers=[
-            db_main.as_retriever(search_kwargs={"k": 5}),
+            db_main.as_retriever(search_kwargs={"k": 6}),
             db_memory.as_retriever(search_kwargs={"k": 3}),
         ],
         weights=[0.7, 1.3]

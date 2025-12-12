@@ -3,7 +3,9 @@
 
 
 import streamlit as st
-from src.config import DATA_PATH, DB_FAISS_PATH
+from sympy.codegen import Print
+
+from src.config import DATA_PATH, DB_FAISS_PATH, MISC_PATH, MODEL
 from src.utils import stylish_heading
 from src.loader import load_pdf_files
 from src.chunker import create_chunks
@@ -13,15 +15,17 @@ from src.model_loader import load_llm
 from src.prompts import CUSTOM_PROMPT_TEMPLATE, set_custom_prompt
 from src.qa_chain import setup_qa_chain
 from src.memory_manager import load_memory_db, save_memory
+from src.translator import translate_to_italian, translate_to_english
 import os
 
 # Page config
-st.set_page_config(page_title="Universal AI Chatbot", page_icon="🧠", layout="centered")
+st.set_page_config(page_title="J.A.R.V.I.S.", page_icon="🧠", layout="centered")
 
 # Header
 stylish_heading()
-st.markdown("<h2 style='text-align: center;'>🧠 Ask Me Anything From Your PDFs</h2>", unsafe_allow_html=True)
-st.markdown("✅ Powered by **Offline Mistral** + **FAISS**. Add `.pdf` files in the `/data` folder to change knowledge base.")
+
+st.markdown("✅ Powered by **Offline LLama** + **FAISS**")
+st.image(os.path.join(MISC_PATH, "logo.png"))
 
 st.divider()
 
@@ -56,20 +60,28 @@ if user_input:
 
     # --- Learning mode ---
     if user_input.lower().startswith("learn:"):
-        new_knowledge = user_input.replace("learn:", "").strip()
-        save_memory(new_knowledge, db_memory)
-        st.chat_message("assistant").markdown(f"🧠 I learned: **{new_knowledge}**")
+        new_knowledge_en = translate_to_english(user_input.replace("learn:", "").strip()) #translate to english
+        save_memory(new_knowledge_en, db_memory)
+        st.chat_message("assistant").markdown(f"🧠 I learned: **{new_knowledge_en}**")
     else:
         # Normal question
         st.chat_message("user").markdown(user_input)
         with st.chat_message("assistant"):
             with st.spinner("Thinking... 🧠"):
-                try:
-                    answer = qa_chain.invoke({"query": user_input})
-                    st.markdown(f"🤖 {answer['result']}")
-                    st.session_state.chat_history.append(("bot", answer['result']))
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
+                # try:
+                query_en = translate_to_english(user_input) #translate to english
+
+                print("Question in english:", query_en)
+
+                answer_en = qa_chain.invoke({"query": query_en})["result"]
+                print("Answer in english:", answer_en)
+
+                answer_it = translate_to_italian(answer_en)# translate to italian
+
+                st.markdown(f"🤖 {answer_it}")
+                st.session_state.chat_history.append(("bot", answer_en)) #append answer in english for chat session memory
+                # except Exception as e:
+                #     st.error(f"❌ Error: {e}")
 
 
 

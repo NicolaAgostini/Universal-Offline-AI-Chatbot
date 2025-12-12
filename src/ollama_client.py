@@ -2,12 +2,12 @@ import os
 import requests
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
-MODEL_NAME = os.getenv("MODEL_NAME", "mistral:instruct")
 
-def ask_ollama(prompt, max_tokens=2000):
+
+def ask_ollama(prompt, model_name, max_tokens=2000):
     url = f"{OLLAMA_HOST}/v1/completions"
     payload = {
-        "model": MODEL_NAME,
+        "model": model_name,
         "prompt": prompt,
         "max_tokens": max_tokens
     }
