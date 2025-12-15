@@ -12,7 +12,7 @@ def ask_ollama(prompt, model_name, max_tokens=2000):
         "max_tokens": max_tokens
     }
     try:
-        response = requests.post(url, json=payload, timeout=30)
+        response = requests.post(url, json=payload, timeout=120)
         response.raise_for_status()
         data = response.json()
         if "completion" in data:
