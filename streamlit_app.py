@@ -17,6 +17,7 @@ from src.qa_chain import setup_qa_chain
 from src.memory_manager import load_memory_db, save_memory
 from src.translator import translate_to_italian, translate_to_english
 import os
+import hashlib
 
 # Page config
 st.set_page_config(page_title="J.A.R.V.I.S.", page_icon="🧠", layout="centered")
@@ -29,15 +30,37 @@ st.image(os.path.join(MISC_PATH, "logo.png"))
 
 st.divider()
 
+
+
+def compute_docs_hash(docs):
+    h = hashlib.md5()
+    for d in docs:
+        h.update(d.page_content.encode("utf-8"))
+    return h.hexdigest()
+
 # Load pipeline once
 @st.cache_resource(show_spinner="Warming up the brain... 🧠⚙️")
 def load_pipeline():
-    documents = load_pdf_files(DATA_PATH)
+    documents = load_pdf_files(DATA_PATH) # Loading documents from information lake
     chunks = create_chunks(documents)
     embedding_model = get_embedding_model()
 
-    if not os.path.exists(DB_FAISS_PATH):
+    docs_hash = compute_docs_hash(chunks)
+
+    if os.path.exists("data/docs.hash"):
+        with open("data/docs.hash") as f:
+            old_hash = f.read()
+    else:
+        old_hash = None
+
+    if docs_hash != old_hash:
+        print("Updated DOCUMENTS, updating DB FAISS....")
         build_vector_db(chunks, embedding_model, DB_FAISS_PATH)
+        with open("data/docs.hash", "w") as f:
+            f.write(docs_hash)
+
+    # if not os.path.exists(DB_FAISS_PATH):
+    #     build_vector_db(chunks, embedding_model, DB_FAISS_PATH)
 
     db_main = load_vector_db(DB_FAISS_PATH, embedding_model)
     db_memory = load_memory_db(embedding_model)
@@ -90,5 +113,7 @@ if st.session_state.chat_history:
     st.divider()
     st.markdown("🕓 **Conversation History**", help="Scroll back through your past questions and answers.")
     for sender, msg in st.session_state.chat_history:
+
         icon = "🧠" if sender == "user" else "🤖"
-        st.markdown(f"**{icon} {sender.capitalize()}**: {msg}")
+        st.markdown(f"**{icon} {sender.capitalize()}**: {translate_to_italian(msg)}")
+

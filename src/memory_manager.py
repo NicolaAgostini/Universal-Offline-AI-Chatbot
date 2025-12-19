@@ -3,25 +3,44 @@ from langchain_community.vectorstores import FAISS
 from src.config import MEMORY_DB_PATH
 
 
+
 def load_memory_db(embedding_model):
-    """Load or create memory database"""
-    if not os.path.exists(MEMORY_DB_PATH):
+    """Load or create persistent FAISS memory DB"""
+
+    index_file = os.path.join(MEMORY_DB_PATH, "index.faiss")
+    store_file = os.path.join(MEMORY_DB_PATH, "index.pkl")
+
+    # if db doesn't exist
+    if not os.path.exists(index_file) or not os.path.exists(store_file):
+        print("🧠 Memory DB not found → creating new one")
         os.makedirs(MEMORY_DB_PATH, exist_ok=True)
-        print("🧠 Creating memory DB...")
-        return FAISS.from_texts([""], embedding_model)  # DB vuoto
+
+        memory = FAISS.from_texts(
+            ["initial memory"],  # serve almeno 1 documento
+            embedding_model
+        )
+        memory.save_local(MEMORY_DB_PATH)
+        return memory
+
+    #if db esists
     try:
-        memory = FAISS.load_local(MEMORY_DB_PATH,
-                            embeddings=embedding_model,
-                            allow_dangerous_deserialization=True)
+        memory = FAISS.load_local(
+            MEMORY_DB_PATH,
+            embeddings=embedding_model,
+            allow_dangerous_deserialization=True
+        )
         print("🧠 Memory DB Loaded.")
         return memory
 
-    except RuntimeError as e:
-        print("⚠️ FAISS DB not found, creating new one:", e)
-        return FAISS.from_texts([""], embedding_model)
-
     except Exception as e:
-        print("❌ Unexpected error while loading FAISS memory DB:", e)
+        print("❌ Memory DB corrupted → recreating:", e)
+
+        memory = FAISS.from_texts(
+            ["initial memory"],
+            embedding_model
+        )
+        memory.save_local(MEMORY_DB_PATH)
+        return memory
 
 
 def save_memory(text, memory_db):
@@ -29,3 +48,8 @@ def save_memory(text, memory_db):
     memory_db.add_texts([text])
     memory_db.save_local(MEMORY_DB_PATH)
     print("💾 Memory saved:", text)
+
+
+
+
+
