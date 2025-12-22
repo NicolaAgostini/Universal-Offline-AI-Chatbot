@@ -15,6 +15,7 @@ from docx import Document as DocxDocument
 import pandas as pd
 from odf import text, teletype
 from odf.opendocument import load as load_odt
+from src.translator import translate_to_english
 
 
 SUPPORTED_EXTENSIONS = [
@@ -29,6 +30,19 @@ SUPPORTED_EXTENSIONS = [
     ".odt",
 ]
 
+#translate documents in italian
+def make_translated_document(text: str, path: str):
+    translated = translate_to_english(text)
+
+    return Document(
+        page_content=translated,
+        metadata={
+            "source": path,
+            "lang": "en",
+            "original_lang": "it",
+            "original_text": text
+        }
+    )
 
 def load_docx_file(path: str):
     """Load docx file and read header footer
@@ -55,10 +69,10 @@ def load_docx_file(path: str):
                     if text:
                         parts.append(text)
     except Exception as e:
-        # non bloccante: continua anche se ci sono problemi con tabelle
+        # no blocking, continue even if there are no tables
         print(f"⚠️ Error reading tables in {path}: {e}")
 
-    # header/footer (se presenti)
+    # if there are header footer
     try:
         if doc.sections:
             for sec in doc.sections:
@@ -73,7 +87,7 @@ def load_docx_file(path: str):
                         if p.text and p.text.strip():
                             parts.append(p.text.strip())
     except Exception:
-        # ignoriamo eventuali problemi nella sezione
+        # ignore problems in the section
         pass
 
     full_text = "\n\n".join(parts).strip()
@@ -81,34 +95,51 @@ def load_docx_file(path: str):
         print(f"⚠️ DOCX {path} loaded but empty.")
         return []
 
-    return [Document(page_content=full_text, metadata={"source": path})]
+    return [make_translated_document(full_text, path)]
 
 
 
 def load_csv_file(path: str):
-    """Carica CSV come testo concatenato."""
+    """Load csv as chained"""
     df = pd.read_csv(path, encoding="utf-8", engine="python")
-    return [Document(page_content=df.to_string(), metadata={"source": path})]
+    text = df.to_string()
+    return [make_translated_document(text, path)]
 
+def load_odt_file(path: str):
+    """Load odt as a single document"""
+    doc = load_odt(path)
+    all_text = []
+    for elem in doc.getElementsByType(text.P):
+        all_text.append(teletype.extractText(elem))
+    full_text = "\n".join(all_text)
+    return [make_translated_document(full_text, path)]
 
 def load_single_file(path: str):
-    """Restituisce un documento LangChain in base al tipo file."""
+    """Return a langChain documents for each different type of file."""
     ext = os.path.splitext(path)[1].lower()
 
     if ext == ".pdf":
-        return PyPDFLoader(path).load()
+        docs = PyPDFLoader(path).load()
+        return [
+            make_translated_document(d.page_content, path)
+            for d in docs
+        ]
 
     elif ext == ".txt":
-        return TextLoader(path, encoding="utf-8").load()
+        docs = TextLoader(path, encoding="utf-8").load()
+        return [make_translated_document(d.page_content, path) for d in docs]
 
     elif ext == ".md":
-        return UnstructuredMarkdownLoader(path).load()
+        docs = UnstructuredMarkdownLoader(path).load()
+        return [make_translated_document(d.page_content, path) for d in docs]
 
     elif ext in [".html", ".htm"]:
-        return UnstructuredHTMLLoader(path).load()
+        docs = UnstructuredHTMLLoader(path).load()
+        return [make_translated_document(d.page_content, path) for d in docs]
 
     elif ext == ".epub":
-        return UnstructuredEPubLoader(path).load()
+        docs = UnstructuredEPubLoader(path).load()
+        return [make_translated_document(d.page_content, path) for d in docs]
 
     elif ext == ".csv":
         return load_csv_file(path)
@@ -120,14 +151,13 @@ def load_single_file(path: str):
         return load_odt_file(path)
 
     else:
-        print(f"❌ Formato non supportato: {ext} → ignorato.")
+        print(f"❌ Formato non supportato: {ext}")
         return []
 
 
 def load_pdf_files(data_path):
     """
-    Manteniamo il nome originale della funzione,
-    ma ora carica TUTTI i formati supportati.
+    Load every file inside this function
     """
     documents = []
 
@@ -150,12 +180,6 @@ def load_pdf_files(data_path):
     return documents
 
 
-def load_odt_file(path: str):
-    """Carica file ODT in un singolo documento."""
-    doc = load_odt(path)
-    all_text = []
-    for elem in doc.getElementsByType(text.P):
-        all_text.append(teletype.extractText(elem))
-    return [Document(page_content="\n".join(all_text), metadata={"source": path})]
+
 
 
