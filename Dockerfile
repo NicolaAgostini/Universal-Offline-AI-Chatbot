@@ -18,6 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install PyTorch ≥2.6 with GPU if possibile, CPU fallback
+#RUN pip install --no-cache-dir "torch>=2.6.0" torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 || \
+#    pip install --no-cache-dir "torch>=2.6.0" torchvision torchaudio \
+
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
