@@ -13,11 +13,16 @@
 #     )
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
+import torch
 
 def get_embedding_model():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"🧠 Embeddings running su: {device.upper()}")
+
     return HuggingFaceEmbeddings(
         model_name="BAAI/bge-m3",
-        model_kwargs={"device": "cpu"},
+        # model_name="BAAI/bge-base-en-v1.5",
+        model_kwargs={"device": device},
         encode_kwargs={"normalize_embeddings": True}
     )
 

@@ -5,8 +5,6 @@ from langchain.retrievers import EnsembleRetriever
 
 def setup_qa_chain(llm, db_main, db_memory, prompt):
 
-
-
     # Combine main + memory
     retriever = EnsembleRetriever(
         retrievers=[
@@ -18,6 +16,7 @@ def setup_qa_chain(llm, db_main, db_memory, prompt):
     return RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
+        return_source_documents=True,
         chain_type="stuff",
         chain_type_kwargs={"prompt": prompt},
     )

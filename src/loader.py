@@ -31,17 +31,19 @@ SUPPORTED_EXTENSIONS = [
 ]
 
 #translate documents in italian
-def make_translated_document(text: str, path: str):
+def make_translated_document(text: str, metadata: dict):
     translated = translate_to_english(text)
+
+    new_metadata = dict(metadata)  # copia sicura
+    new_metadata.update({
+        "lang": "en",
+        "original_lang": "it",
+        "original_text": text
+    })
 
     return Document(
         page_content=translated,
-        metadata={
-            "source": path,
-            "lang": "en",
-            "original_lang": "it",
-            "original_text": text
-        }
+        metadata=new_metadata
     )
 
 def load_docx_file(path: str):
@@ -95,7 +97,8 @@ def load_docx_file(path: str):
         print(f"⚠️ DOCX {path} loaded but empty.")
         return []
 
-    return [make_translated_document(full_text, path)]
+    metadata = {"source": path}
+    return [make_translated_document(full_text, metadata)]
 
 
 
@@ -103,7 +106,7 @@ def load_csv_file(path: str):
     """Load csv as chained"""
     df = pd.read_csv(path, encoding="utf-8", engine="python")
     text = df.to_string()
-    return [make_translated_document(text, path)]
+    return [make_translated_document(text, {"source": path})]
 
 def load_odt_file(path: str):
     """Load odt as a single document"""
@@ -112,7 +115,7 @@ def load_odt_file(path: str):
     for elem in doc.getElementsByType(text.P):
         all_text.append(teletype.extractText(elem))
     full_text = "\n".join(all_text)
-    return [make_translated_document(full_text, path)]
+    return [make_translated_document(full_text, {"source": path})]
 
 def load_single_file(path: str):
     """Return a langChain documents for each different type of file."""
@@ -121,25 +124,37 @@ def load_single_file(path: str):
     if ext == ".pdf":
         docs = PyPDFLoader(path).load()
         return [
-            make_translated_document(d.page_content, path)
+            make_translated_document(d.page_content, d.metadata)
             for d in docs
         ]
 
     elif ext == ".txt":
         docs = TextLoader(path, encoding="utf-8").load()
-        return [make_translated_document(d.page_content, path) for d in docs]
+        return [
+            make_translated_document(d.page_content, d.metadata)
+            for d in docs
+        ]
 
     elif ext == ".md":
         docs = UnstructuredMarkdownLoader(path).load()
-        return [make_translated_document(d.page_content, path) for d in docs]
+        return [
+            make_translated_document(d.page_content, d.metadata)
+            for d in docs
+        ]
 
     elif ext in [".html", ".htm"]:
         docs = UnstructuredHTMLLoader(path).load()
-        return [make_translated_document(d.page_content, path) for d in docs]
+        return [
+            make_translated_document(d.page_content, d.metadata)
+            for d in docs
+        ]
 
     elif ext == ".epub":
         docs = UnstructuredEPubLoader(path).load()
-        return [make_translated_document(d.page_content, path) for d in docs]
+        return [
+            make_translated_document(d.page_content, d.metadata)
+            for d in docs
+        ]
 
     elif ext == ".csv":
         return load_csv_file(path)

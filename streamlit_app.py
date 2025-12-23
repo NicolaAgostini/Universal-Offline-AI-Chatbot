@@ -38,6 +38,22 @@ def compute_docs_hash(docs):
         h.update(d.page_content.encode("utf-8"))
     return h.hexdigest()
 
+# sources from documents
+def format_sources(docs):
+    sources = []
+    for d in docs:
+        meta = d.metadata
+        source = os.path.basename(meta.get("source", "unknown"))
+        page = meta.get("page")
+
+        if page is not None:
+            sources.append(f"{source} – page {page + 1}")
+        else:
+            sources.append(source)
+
+    # remove duplicates
+    return list(dict.fromkeys(sources))
+
 # Load pipeline once
 @st.cache_resource(show_spinner="Warming up the brain... 🧠⚙️")
 def load_pipeline():
@@ -46,6 +62,15 @@ def load_pipeline():
     embedding_model = get_embedding_model()
 
     docs_hash = compute_docs_hash(chunks)
+    hash_path = "data/docs.hash"
+
+    db_exists = os.path.exists(DB_FAISS_PATH) and \
+                os.path.exists(os.path.join(DB_FAISS_PATH, "index.faiss"))
+
+    if (not db_exists):
+        print("🔄 Building FAISS vector DB...")
+        build_vector_db(chunks, embedding_model, DB_FAISS_PATH)
+
 
     if os.path.exists("data/docs.hash"):
         with open("data/docs.hash") as f:
@@ -53,11 +78,14 @@ def load_pipeline():
     else:
         old_hash = None
 
+
     if docs_hash != old_hash:
         print("Updated DOCUMENTS, updating DB FAISS....")
         build_vector_db(chunks, embedding_model, DB_FAISS_PATH)
         with open("data/docs.hash", "w") as f:
             f.write(docs_hash)
+
+
 
     # if not os.path.exists(DB_FAISS_PATH):
     #     build_vector_db(chunks, embedding_model, DB_FAISS_PATH)
@@ -96,12 +124,21 @@ if user_input:
 
                 print("Question in english:", query_en)
 
-                answer_en = qa_chain.invoke({"query": query_en})["result"]
+                result = qa_chain.invoke({"query": query_en})
+                answer_en = result["result"]
+                source_docs = result.get("source_documents", [])
                 print("Answer in english:", answer_en)
+
+                sources = format_sources(source_docs)
 
                 answer_it = translate_to_italian(answer_en)# translate to italian
 
                 st.markdown(f"🤖 {answer_it}")
+                if sources:
+                    st.markdown("📎 **Fonti:**")
+                    for s in sources:
+                        if s != "unknown":
+                            st.markdown(f"- {s}")
                 st.session_state.chat_history.append(("bot", answer_en)) #append answer in english for chat session memory
                 # except Exception as e:
                 #     st.error(f"❌ Error: {e}")
