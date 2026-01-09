@@ -11,6 +11,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from pyfiglet import figlet_format
 from termcolor import colored
+from src.translator import translate_to_english
 
 # === Load environment (.env should have HF_TOKEN) ===
 load_dotenv(find_dotenv())
@@ -38,7 +39,7 @@ Fai riferimento solo al contesto fornito.
 Contesto: {context}
 Domanda: {question}
 
-Inizia la risposta direttamente senza testo superfluo.
+Dai informazioni dettagliate includendo buona parte dei punti del documento citato
 """
 
 def set_custom_prompt(template):
@@ -99,7 +100,7 @@ if __name__ == "__main__":
 
     db = load_vector_db(DB_FAISS_PATH, embedding_model)
     llm = load_llm()
-    qa_chain = setup_qa_chain(llm, db, set_custom_prompt(CUSTOM_PROMPT_TEMPLATE))
+    qa_chain = setup_qa_chain(llm, db, set_custom_prompt(translate_to_english(CUSTOM_PROMPT_TEMPLATE)))
 
     print("\n🟢 You can start chatting now. Type 'Exit the Chatbot' to end the session.\n")
 
