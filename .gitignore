@@ -198,3 +198,6 @@ data/*
 
 #memory db
 memory_db/*
+
+# vectorstore
+vectorstore/*

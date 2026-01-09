@@ -16,7 +16,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 import torch
 
 def get_embedding_model():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    #device = "cuda" if torch.cuda.is_available() else "cpu" #for now exclude GPU otherwise it stucks on user PC
+    device = "cpu"
     print(f"🧠 Embeddings running su: {device.upper()}")
 
     return HuggingFaceEmbeddings(
